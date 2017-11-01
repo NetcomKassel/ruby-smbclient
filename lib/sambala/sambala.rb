@@ -24,11 +24,12 @@
 # 
 # Example:
 # 
-#   samba = Sambala.new(  :domain   =>  'NTDOMAIN', 
+#   samba = Sambala.new(:domain   =>  'NTDOMAIN',
 #                       :host     =>  'sambaserver',
 #                       :share    =>  'sambashare',
 #                       :user     =>  'walrus', 
-#                       :password =>  'eggman')
+#                       :password =>  'eggman',
+#                       :version  =>  2)
 #                       
 #   samba.cd('myfolder')   # =>  true
 #   samba.put(:from => 'aLocalFile.txt')    # =>  [false, "aLocalFile.txt does not exist\r\n"]
@@ -67,7 +68,7 @@ class Sambala
   #                       :share    =>  'sambashare',
   #                       :user     =>  'walrus', 
   #                       :password =>  'eggman')
-  def initialize(options={:domain => '', :host => '', :share => '', :user => '', :password => ''})
+  def initialize(options={:domain => '', :host => '', :share => '', :user => '', :password => '', :version => 2})
     $log_sambala = GlobaLog.logger(STDERR,:warn)
 		@recurse = false
 		begin

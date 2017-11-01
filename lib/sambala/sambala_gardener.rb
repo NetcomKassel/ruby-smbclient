@@ -94,7 +94,7 @@ class Sambala
     def init_gardener
       @gardener = Abundance.gardener(:rows => 1, :init_timeout => @options[:init_timeout]) do
 				
-				PTY.spawn("smbclient //#{@options[:host]}/#{@options[:share]} #{@options[:password]} -W #{@options[:domain]} -U #{@options[:user]}") do |r,w,pid|
+				PTY.spawn("smbclient //#{@options[:host]}/#{@options[:share]} #{@options[:password]} -W #{@options[:domain]} -U #{@options[:user]} -m SMB#{@options[:version]}") do |r,w,pid|
           w.sync = true
           $expect_verbose = false
           catch :init do
