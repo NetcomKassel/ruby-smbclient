@@ -1,15 +1,15 @@
-class Sambala
+class SMBClient
   class SmbInitError < StandardError; end
-  # The Sambala::Gardener module bings Abundance into Sambala.
-  # A bunch of mixins used inside Sambala to access Abundance Non-Blocking Threading.
+  # The Smbclient::Gardener module bings Abundance into Smbclient.
+  # A bunch of mixins used inside Smbclient to access Abundance Non-Blocking Threading.
   # These methods are a higher level abstraction of Abundance methods,
-  # serving as reusable general purpose agents inside Sambala, mainly
+  # serving as reusable general purpose agents inside Smbclient, mainly
   # for those repetitive execution commands.
   # 
   # Author:: lp (mailto:lp@spiralix.org)
   # Copyright:: 2008 Louis-Philippe Perron - Released under the terms of the MIT license
   # 
-  # :title:Sambala::Gardener
+  # :title:Smbclient::Gardener
   module Gardener
 		require 'timeout'
     
@@ -46,7 +46,7 @@ class Sambala
     def exec_interactive(command,data)
       id = @gardener.seed("#{command} #{data}")
       result = @gardener.harvest(:one,id)
-			$log_sambala.debug("exec_interactive result") {"#{result.inspect}"}
+			$log_smbclient.debug("exec_interactive result") {"#{result.inspect}"}
       return result[:success], result[:message]
     end
 
@@ -58,7 +58,7 @@ class Sambala
     #   result = exec_queue('get','aFile.txt')  # => [true,1]
     def exec_queue(command,data)
       result = @gardener.seed("#{command} #{data}")
-			$log_sambala.debug("exec_queue result") {"#{result.inspect}"}
+			$log_smbclient.debug("exec_queue result") {"#{result.inspect}"}
 			result.integer? ? [true,result] : [false,result]
     end
 		
@@ -80,11 +80,11 @@ class Sambala
           	init.map! { |result| result[:success] }
           	throw :gardener if init.uniq.size == 1 and init[0] == true
 					rescue Timeout::Error
-						$log_sambala.error("Having problem setting the smb client... TRY #{num}")
+						$log_smbclient.error("Having problem setting the smb client... TRY #{num}")
 					end
 					kill_gardener_and_incr
         end
-				$log_sambala.fatal("All Attemps Failed, Gardener could not be initiated")
+				$log_smbclient.fatal("All Attemps Failed, Gardener could not be initiated")
         raise SmbInitError.exception("Couldn't set smbclient properly (#{$!.to_s})")
       end
 			@posix_support = posix?(@init_status[0][:message])
@@ -117,18 +117,18 @@ class Sambala
 								end
 							end
 						end
-            w.print "#{seed.sprout}\r"; $log_sambala.debug("smbclient") {"sprout: -- #{seed.sprout} --"}
+            w.print "#{seed.sprout}\r"; $log_smbclient.debug("smbclient") {"sprout: -- #{seed.sprout} --"}
             catch :result do
 							iter = 1
               loop do
                 r.expect(/.*\xD\xAsmb\x3A\s[\x5C]*\w*[\x5C]+\x3E.*/) do |text|
-									$log_sambala.debug("smbclient") {"expect: -- #{text.inspect} --"}
+									$log_smbclient.debug("smbclient") {"expect: -- #{text.inspect} --"}
                   if text != nil
                     msg = text[0]
 										
                     msg.gsub!(/smb\x3A\s\w*\x5C\x3E\s*$/, '')
                     msg.gsub!(/^\s*#{seed.sprout}/, '')
-                    msg.lstrip!; $log_sambala.debug("smbclient") {"msg: -- #{msg.inspect} --"}
+                    msg.lstrip!; $log_smbclient.debug("smbclient") {"msg: -- #{msg.inspect} --"}
 
                     success = case seed.sprout
                       when /^put/
@@ -146,11 +146,11 @@ class Sambala
                     seed.crop(success, msg)
                     throw :result
 									elsif iter > 9999999
-										$log_sambala.warn("Failed to #{seed.sprout}")
+										$log_smbclient.warn("Failed to #{seed.sprout}")
 										seed.crop(false, "Failed to #{seed.sprout}")
 										throw :result
 									else
-										$log_sambala.debug("smbclient") {"jumped iter: #{iter.to_s}"}
+										$log_smbclient.debug("smbclient") {"jumped iter: #{iter.to_s}"}
 										iter += 1
                   end
                 end

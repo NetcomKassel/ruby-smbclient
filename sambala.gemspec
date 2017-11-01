@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'sambala/version'
+require 'smbclient/version'
 
 Gem::Specification.new do |spec|
-  spec.name = 'sambala'
-  spec.version = Sambala::VERSION
+  spec.name = 'smbclient'
+  spec.version = SMBClient::VERSION
   spec.authors = ['Ralf Herzog']
   spec.email = ['ralf.herzog@netcom-kassel.de']
 

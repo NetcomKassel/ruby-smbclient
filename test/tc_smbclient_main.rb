@@ -2,11 +2,11 @@ require 'rubygems'
 require 'globalog'
 require 'test/unit'
 require 'fileutils'
-require File.join( File.dirname( File.expand_path(__FILE__)), '..', 'lib', 'sambala')
+require File.join( File.dirname( File.expand_path(__FILE__)), '..', 'lib', 'smbclient')
 
-TESTFILE = 'sambala_test'
-LOCAL_DIR = File.join( File.dirname( File.expand_path(__FILE__)), 'sambala_test_dir')
-REMOTE_DIR = 'sambala_test_dir'
+TESTFILE = 'smbclient_test'
+LOCAL_DIR = File.join( File.dirname( File.expand_path(__FILE__)), 'smbclient_test_dir')
+REMOTE_DIR = 'smbclient_test_dir'
 WELCOME = <<TITLE
 
 
@@ -20,13 +20,13 @@ WELCOME = <<TITLE
 /////////////////////////////////////////////////////////////
 TITLE
 
-class TestSambalaMain < Test::Unit::TestCase
+class TestSMBClientMain < Test::Unit::TestCase
   
   def setup
 		@log_test = GlobaLog.logger(STDERR,:info,true)
     check_smbclient_presence
     get_samba_param_from_input
-    init_sambala
+    init_smbclient
 		put_marker
 		Dir.mkdir(LOCAL_DIR)
   end
@@ -97,16 +97,16 @@ class TestSambalaMain < Test::Unit::TestCase
     @user = $stdin.gets.chomp
     print "password: "
     @password = $stdin.gets.chomp
-    puts "I will now try to connect to #{@share.to_s} for the purpose of testing sambala..."
+    puts "I will now try to connect to #{@share.to_s} for the purpose of testing smbclient..."
     print "\n"
   end
   
-  def init_sambala
-    @samba = Sambala.new( :domain => @domain,
-                          :host => @host, 
-                          :share => @share,
-                          :user => @user, 
-                          :password => @password)
+  def init_smbclient
+    @samba = Smbclient.new(:domain => @domain,
+													 :host => @host,
+													 :share => @share,
+													 :user => @user,
+													 :password => @password)
     puts "Connection successfull,\nnow proceding with test:"
   end
   

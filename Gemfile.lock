@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sambala (0.1.0)
+    smbclient (0.1.1)
 
 GEM
   remote: https://rubygems.org/
@@ -23,8 +23,8 @@ DEPENDENCIES
   bundler (~> 1.15)
   minitest (~> 5.0)
   rake (~> 10.0)
-  sambala!
   simplecov (~> 0.14.1)
+  smbclient!
 
 BUNDLED WITH
    1.15.4

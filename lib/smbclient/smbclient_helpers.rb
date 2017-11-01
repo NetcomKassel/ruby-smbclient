@@ -1,4 +1,4 @@
-module SambalaHelpers
+module SMBClientHelpers
 	
 	class LsItem
 		attr_reader :string, :name, :type, :size, :date

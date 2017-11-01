@@ -1,20 +1,20 @@
 # This class acts as a Ruby wrapper around the smbclient command line utility,
 # allowing access to Samba (SMB, CIFS) shares from Ruby.
-# What's special about Sambala's implementation, is that it allows for both both queue
+# What's special about Smbclient's implementation, is that it allows for both both queue
 # and interactive commands operations.  While interactive mode is invoked in a blocking manner,
 # the queue mode behaves as a non-blocking, multi-threaded, background process.
 #
-# Sambala works on Unix derivatives operating systems (Linux, BSD, OSX, else),
+# Smbclient works on Unix derivatives operating systems (Linux, BSD, OSX, else),
 # as long as the operating system has the smbclient utility installed somewhere in the environment's PATH.
 # 
-# Sambala supports most, but not all, smbclient features.  I didn't to this point implement
-# commands relying on posix server support, because I wanted Sambala to be server agnostic.
-# If some commands or interfaces you would like to use is not supported by Sambala,
+# Smbclient supports most, but not all, smbclient features.  I didn't to this point implement
+# commands relying on posix server support, because I wanted Smbclient to be server agnostic.
+# If some commands or interfaces you would like to use is not supported by Smbclient,
 # email me and I may answer with a quick feature update when feasible.
 # 
-# I tried to make Sambala as simple as possible, retaining most of the original smbclient command names,
-# as instance method names for the Sambala client object.  It behaves as you would expect from an OOP lib:
-# You instantiate a new Sambala object and are then allowed to send smbclient commands a instance method to this object.
+# I tried to make Smbclient as simple as possible, retaining most of the original smbclient command names,
+# as instance method names for the Smbclient client object.  It behaves as you would expect from an OOP lib:
+# You instantiate a new Smbclient object and are then allowed to send smbclient commands a instance method to this object.
 # The only big difference, is the queue mode, which is activated on a per command/method invocation, with a 'true' flag,
 # you add as the last parameter to the method invocation.  When some commands are queued, you can harvest them at a later point
 # with the +queue_results+ method, returning an array containing your commands and their respective results.
@@ -24,7 +24,7 @@
 # 
 # Example:
 # 
-#   samba = Sambala.new(:domain   =>  'NTDOMAIN',
+#   samba = Smbclient.new(:domain   =>  'NTDOMAIN',
 #                       :host     =>  'sambaserver',
 #                       :share    =>  'sambashare',
 #                       :user     =>  'walrus', 
@@ -36,40 +36,40 @@
 #   samba.close
 # 
 # For detailed documentation refer to the online ruby-doc:
-# http://sambala.rubyforge.org/ruby-doc/
+# http://smbclient.rubyforge.org/ruby-doc/
 # 
 # ///////////////////////////////////////////////////////////////////////////////////////
 # 
 # Author:: lp (mailto:lp@spiralix.org)
 # Copyright:: 2008 Louis-Philippe Perron - Released under the terms of the MIT license
 # 
-# :title:Sambala
+# :title:Smbclient
 
-class Sambala
+class Smbclient
   require 'pty'
   require 'expect'
   require 'rubygems'
 	require 'globalog'
   require 'abundance'
-	require File.join( File.dirname( File.expand_path(__FILE__)), 'sambala_helpers')
-	include SambalaHelpers
-  require File.join( File.dirname( File.expand_path(__FILE__)), 'sambala_gardener')
+	require File.join( File.dirname( File.expand_path(__FILE__)), 'smbclient_helpers')
+	include SMBClientHelpers
+  require File.join( File.dirname( File.expand_path(__FILE__)), 'smbclient_gardener')
   include Gardener
   
-  # The +new+ class method initializes Sambala.
+  # The +new+ class method initializes Smbclient.
   # === Parameters
   # * :domain = the smb server domain, optionnal in most cases
   # * :host = the hostname of the smb server, may be IP or fully qualified domain name
   # * :user = the user name to log into the server
   # * :password = the password to log into the server
   # === Example
-  #   samba = Sambala.new(  :domain   =>  'NTDOMAIN', 
+  #   samba = Smbclient.new(  :domain   =>  'NTDOMAIN',
   #                       :host     =>  'sambaserver',
   #                       :share    =>  'sambashare',
   #                       :user     =>  'walrus', 
   #                       :password =>  'eggman')
   def initialize(options={:domain => '', :host => '', :share => '', :user => '', :password => '', :version => 2})
-    $log_sambala = GlobaLog.logger(STDERR,:warn)
+    $log_smbclient = GlobaLog.logger(STDERR,:warn)
 		@recurse = false
 		begin
       options[:init_timeout] = 1
@@ -415,7 +415,7 @@ class Sambala
 	
 	# The +queue_processing+ method returns an array containing the tasks actually processing
 	# === Example
-	# 	samba.queue_processing		# => [[1, "put myFile"],[2, "put lib/sambala.rb sambala.rb"]]
+	# 	samba.queue_processing		# => [[1, "put myFile"],[2, "put lib/smbclient.rb smbclient.rb"]]
 	def queue_processing
 		results = @gardener.harvest(:sprout)
 		results.map { |result| [result[:id], result[:seed]] }
