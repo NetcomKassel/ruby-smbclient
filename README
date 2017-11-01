@@ -25,11 +25,12 @@ Fork if you will... at your own risks and perils!
 
 Example:
 
-  samba = Sambala.new(  :domain   =>  'NTDOMAIN', 
+  samba = Sambala.new(:domain   =>  'NTDOMAIN',
                       :host     =>  'sambaserver',
                       :share    =>  'sambashare',
                       :user     =>  'walrus', 
-                      :password =>  'eggman')
+                      :password =>  'eggman',
+                      :version => 2)
                       
   samba.cd('myfolder')   # =>  true
   samba.put(:from => 'aLocalFile.txt')    # =>  [false, "aLocalFile.txt does not exist\r\n"]
