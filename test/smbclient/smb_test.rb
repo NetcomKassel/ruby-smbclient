@@ -16,7 +16,7 @@ class SMBClientTest < Minitest::Test
                          domain: ENV['SMB_DOMAIN'],
                          password: ENV['SMB_PASSWORD'],
                          version: 2
-    p @smb.ls2 ''
+    @smb.ls '201710/'
     @smb.close
   end
 end

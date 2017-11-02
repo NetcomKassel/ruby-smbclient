@@ -1,5 +1,5 @@
 module SMBClient
-  class SmbInitError < StandardError;
+  class SmbInitError < StandardError
   end
   # The Smbclient::Gardener module bings Abundance into Smbclient.
   # A bunch of mixins used inside Smbclient to access Abundance Non-Blocking Threading.
@@ -21,9 +21,9 @@ module SMBClient
     # 	cleaned = clean_path('/My/Path/')		# => '\My\Path'
     def clean_path(path)
       if @posix_support
-        return path
+        path
       else
-        return path.gsub(/\//, '\\')
+        path.gsub(/\//, '\\')
       end
     end
 
@@ -34,8 +34,8 @@ module SMBClient
     # * _queue_ = the command operation mode
     # === Example
     #   result = execute('cd','dir/otherDir*',false)  # =>  true
-    def execute(command, data, queue=false)
-      (queue.is_a? TrueClass) ? exec_queue(command, data) : exec_interactive(command, data)
+    def execute(command, data, queue = false)
+      queue ? exec_queue(command, data) : exec_interactive(command, data)
     end
 
     # The +exec_interactive+ method follows +execute+ when queue=false.
@@ -47,8 +47,8 @@ module SMBClient
     def exec_interactive(command, data)
       id = @gardener.seed("#{command} #{data}")
       result = @gardener.harvest(:one, id)
-      $log_smbclient.debug("exec_interactive result") { "#{result.inspect}" }
-      return result[:success], result[:message]
+      $log_smbclient.debug('exec_interactive result') { result.inspect.to_s }
+      [result[:success], result[:message]]
     end
 
     # The +exec_queue+ method follows +execute+ when queue=true
@@ -59,7 +59,7 @@ module SMBClient
     #   result = exec_queue('get','aFile.txt')  # => [true,1]
     def exec_queue(command, data)
       result = @gardener.seed("#{command} #{data}")
-      $log_smbclient.debug("exec_queue result") { "#{result.inspect}" }
+      $log_smbclient.debug('exec_queue result') { result.inspect.to_s }
       result.integer? ? [true, result] : [false, result]
     end
 
@@ -79,30 +79,29 @@ module SMBClient
             Timeout.timeout(2) { @init_status = @gardener.init_status }
             init = Array.new(@init_status)
             init.map! { |result| result[:success] }
-            throw :gardener if init.uniq.size == 1 and init[0] == true
+            throw :gardener if (init.uniq.size == 1) && init[0]
           rescue Timeout::Error
             $log_smbclient.error("Having problem setting the smb client... TRY #{num}")
           end
           kill_gardener_and_incr
         end
-        $log_smbclient.fatal("All Attemps Failed, Gardener could not be initiated")
-        raise SmbInitError.exception("Couldn't set smbclient properly (#{$!.to_s})")
+        $log_smbclient.fatal('All Attemps Failed, Gardener could not be initiated')
+        raise SmbInitError.exception("Couldn't set smbclient properly (#{$ERROR_INFO})")
       end
       @posix_support = posix?(@init_status[0][:message])
     end
 
     # The +init_gardener+ method initialize a gardener class object
     def init_gardener
-      @gardener = Abundance.gardener(:rows => 1, :init_timeout => @options[:init_timeout]) do
-
-        PTY.spawn("smbclient //#{@options[:host]}/#{@options[:share]} #{@options[:password]} -W #{@options[:domain]} -U #{@options[:user]} -m SMB#{@options[:version]}") do |r, w, pid|
+      @gardener = Abundance.gardener(rows: 1, init_timeout: @options[:init_timeout]) do
+        PTY.spawn("smbclient //#{@options[:host]}/#{@options[:share]} #{@options[:password]} -W #{@options[:domain]} -U #{@options[:user]} -m SMB#{@options[:version]}") do |r, w, _pid|
           w.sync = true
           $expect_verbose = false
           catch :init do
             loop do
               r.expect(/.*\xD?\xAsmb\x3A\s[\x5C]*\x3E.*/) do |text|
-                if text != nil
-                  text[0] =~ /.*Server=.*/i ? Abundance.init_status(true, "#{text.inspect}") : Abundance.init_status(false, "#{text.inspect}")
+                unless text.nil?
+                  text[0] =~ /.*Server=.*/i ? Abundance.init_status(true, text.inspect.to_s) : Abundance.init_status(false, text.inspect.to_s)
                   throw :init
                 end
               end
@@ -113,23 +112,23 @@ module SMBClient
             until prompt
               w.print "\r"
               r.expect(/.*\xD?\xAsmb\x3A\s[\x5C]*\w*[\x5C]+\x3E.*/) do |text|
-                if text != nil
-                  prompt = true
-                end
+                prompt = true unless text.nil?
               end
             end
-            w.print "#{seed.sprout}\r"; $log_smbclient.debug("smbclient") { "sprout: -- #{seed.sprout} --" }
+            w.print "#{seed.sprout}\r"
+            $log_smbclient.debug('smbclient') { "sprout: -- #{seed.sprout} --" }
             catch :result do
               iter = 1
               loop do
                 r.expect(/.*\xD?\xAsmb\x3A\s[\x5C]*\w*[\x5C]+\x3E.*/) do |text|
-                  $log_smbclient.debug("smbclient") { "expect: -- #{text.inspect} --" }
-                  if text != nil
+                  $log_smbclient.debug('smbclient') { "expect: -- #{text.inspect} --" }
+                  if !text.nil?
                     msg = text[0]
 
                     msg.gsub!(/smb\x3A\s\w*\x5C\x3E\s*$/, '')
                     msg.gsub!(/^\s*#{seed.sprout}/, '')
-                    msg.lstrip!; $log_smbclient.debug("smbclient") { "msg: -- #{msg.inspect} --" }
+                    msg.lstrip!
+                    $log_smbclient.debug('smbclient') { "msg: -- #{msg.inspect} --" }
 
                     success = case seed.sprout
                                 when /^put/
@@ -146,12 +145,12 @@ module SMBClient
 
                     seed.crop(success, msg)
                     throw :result
-                  elsif iter > 9999999
+                  elsif iter > 9_999_999
                     $log_smbclient.warn("Failed to #{seed.sprout}")
                     seed.crop(false, "Failed to #{seed.sprout}")
                     throw :result
                   else
-                    $log_smbclient.debug("smbclient") { "jumped iter: #{iter.to_s}" }
+                    $log_smbclient.debug('smbclient') { "jumped iter: #{iter}" }
                     iter += 1
                   end
                 end
@@ -159,7 +158,6 @@ module SMBClient
             end
           end
         end
-
       end
     end
 
@@ -169,7 +167,8 @@ module SMBClient
       begin
         Timeout.timeout(2) { @gardener.close }
       rescue Timeout::Error
-        pids = @gardener.rows_pids; pids << @gardener.garden_pid
+        pids = @gardener.rows_pids
+        pids << @gardener.garden_pid
         pids.each { |pid| Process.kill('HUP', pid) }
       end
       @gardener = nil
@@ -178,11 +177,10 @@ module SMBClient
 
     def posix?(init_message)
       if init_message =~ /windows/i
-        return false
+        false
       else
-        return true
+        true
       end
     end
-
   end
 end

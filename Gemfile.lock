@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    smbclient (0.1.2)
+    smbclient (0.1.1)
       abundance (~> 1.3)
       ftools (~> 0.0)
       globalog (~> 0.1)

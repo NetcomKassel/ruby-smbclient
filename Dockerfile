@@ -4,8 +4,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY . ./
 
+COPY Gemfile* ./
+COPY *gemspec ./
+COPY lib/smbclient/version.rb ./lib/smbclient/
 RUN bundle install
+
+COPY . ./
 
 CMD ["ruby", "test/smbclient/smb_test.rb"]

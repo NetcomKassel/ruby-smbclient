@@ -6,12 +6,12 @@
 #
 # Smbclient works on Unix derivatives operating systems (Linux, BSD, OSX, else),
 # as long as the operating system has the smbclient utility installed somewhere in the environment's PATH.
-# 
+#
 # Smbclient supports most, but not all, smbclient features.  I didn't to this point implement
 # commands relying on posix server support, because I wanted Smbclient to be server agnostic.
 # If some commands or interfaces you would like to use is not supported by Smbclient,
 # email me and I may answer with a quick feature update when feasible.
-# 
+#
 # I tried to make Smbclient as simple as possible, retaining most of the original smbclient command names,
 # as instance method names for the Smbclient client object.  It behaves as you would expect from an OOP lib:
 # You instantiate a new Smbclient object and are then allowed to send smbclient commands a instance method to this object.
@@ -21,32 +21,33 @@
 #
 # When in doubt about what each command does, please refer to smbclient man page for help.
 # ///////////////////////////////////////////////////////////////////////////////////////
-# 
+#
 # Example:
-# 
+#
 #   samba = SMBClient::SMB.new(:domain   =>  'NTDOMAIN',
 #                       :host     =>  'sambaserver',
 #                       :share    =>  'sambashare',
-#                       :user     =>  'walrus', 
+#                       :user     =>  'walrus',
 #                       :password =>  'eggman',
 #                       :version  =>  2)
-#                       
+#
 #   samba.cd('myfolder')   # =>  true
 #   samba.put(:from => 'aLocalFile.txt')    # =>  [false, "aLocalFile.txt does not exist\r\n"]
 #   samba.close
-# 
+#
 # For detailed documentation refer to the online ruby-doc:
 # http://smbclient.rubyforge.org/ruby-doc/
-# 
+#
 # ///////////////////////////////////////////////////////////////////////////////////////
-# 
+#
 # Author:: lp (mailto:lp@spiralix.org)
 # Copyright:: 2008 Louis-Philippe Perron - Released under the terms of the MIT license
-# 
+#
 # :title:Smbclient
 
 require_relative 'fixes'
 
+require 'pp'
 require 'pty'
 require 'expect'
 require 'rubygems'
@@ -58,7 +59,6 @@ require_relative 'smb_gardener'
 
 module SMBClient
   class SMB
-    include Helpers
     include Gardener
 
     # The +new+ class method initializes Smbclient.
@@ -73,16 +73,17 @@ module SMBClient
     #                       :share    =>  'sambashare',
     #                       :user     =>  'walrus',
     #                       :password =>  'eggman')
-    def initialize(options={ :domain => '', :host => '', :share => '', :user => '', :password => '', :version => 2 })
+    def initialize(options = { domain: '', host: '', share: '', user: '', password: '', version: 2 })
       $log_smbclient = GlobaLog.logger(STDERR, :warn)
       @recurse = false
       begin
         options[:init_timeout] = 1
         options[:version] ||= 2
-        @options = options; gardener_ok
+        @options = options
+        gardener_ok
       rescue
         @gardener.close unless @gardener.nil? || @gardener.class != 'Gardener'
-        raise RuntimeError.exception("Unknown Process Failed!! (#{$!.to_s})")
+        raise RuntimeError.exception("Unknown Process Failed!! (#{$ERROR_INFO})")
       end
     end
 
@@ -93,7 +94,7 @@ module SMBClient
     # * _boolean_ = confirms if +cd+ operation completed successfully
     # === Example
     #   samba.cd('aFolder/anOtherFolder/')   # =>  true
-    def cd(to='.')
+    def cd(to = '.')
       execute('cd', clean_path(to))[0]
     end
 
@@ -115,8 +116,8 @@ module SMBClient
     # * _boolean_ = confirms if +del+ operation completed successfully
     # === Example
     #   samba.del('aFile')   # =>  true
-    def del(mask, queue=false)
-      self.recurse!(false)
+    def del(mask, queue = false)
+      recurse!(false)
       execute('del', mask, queue)[0]
     end
 
@@ -130,7 +131,7 @@ module SMBClient
     # === Example
     #   samba.exist?('aFile')  # => true
     def exist?(mask)
-      self.recurse!(false)
+      recurse!(false)
       execute('ls', mask, false)[0]
     end
 
@@ -144,7 +145,7 @@ module SMBClient
     # _array_ = [ _booleanSuccess_, _getResultMessage_ ]
     # === Example
     #   samba.get(:from => 'aFile.txt')   # => [true, "getting file \\aFile.txt.rb of size 3877 as test.rb (99.6 kb/s) (average 89.9 kb/s)\r\n"]
-    def get(opts={ :from => nil, :to => nil, :queue => false })
+    def get(opts = { from: nil, to: nil, queue: false })
       opts[:to].nil? ? strng = opts[:from] + ' ' + opts[:from].split(/[\/|\\]/)[-1] : strng = opts[:from] + ' ' + opts[:to]
       execute('get', clean_path(strng), opts[:queue])
     end
@@ -156,7 +157,7 @@ module SMBClient
     # * _boolean_ = confirms if +cd+ operation completed successfully
     # === Example
     #   samba.lcd('aLocalFolder/anOtherFolder/')   # => true
-    def lcd(to='.')
+    def lcd(to = '.')
       execute('lcd', to)[0]
     end
 
@@ -228,30 +229,16 @@ module SMBClient
     # 																													@string="  doodyrt.rtf                         A        8  Mon Apr 27 09:12:38 2009",
     # 																													@size="8">]}]
 
-    def ls(mask='')
-      result, string = execute('ls', mask, false)
-      if result == true
-        parse_ls(string, mask)
+    def ls(mask = '')
+      result, string = execute 'ls', mask, false
+      if result
+        parse_ls string
       else
-        Array.new
+        []
       end
     end
 
     alias dir ls
-
-    # @param [String] dir Directory
-    # @return [Array] List of hashes with :name, :type, :size, :change_date
-    def ls2(dir)
-      dir_entries = ls dir
-      matches = []
-      dir_entries.split("\r\n").each do |dir_entry|
-        match = /((\w+\.)*\w+) +(\w) +(\d+) +(.+)/.match(dir_entry)
-        next unless match
-        matches << { name: match[1], type: match[3],
-                     size: match[4], change_date: match[5] }
-      end
-      matches
-    end
 
     # The +mask+ method sets a mask to be used during recursive operation of the +mget+ and +mput+ commands.
     # See man page for smbclient to get more on the details of operation
@@ -273,7 +260,7 @@ module SMBClient
     # _array_ = [ _booleanSuccess_, _mgetResultMessage_ ]
     # === Example
     #   samba.mget('file*')  # => [true, "getting file \\file_new.txt of size 3877 as file_new.txt (99.6 kb/s) (average 89.9 kb/s)\r\n"]
-    def mget(mask, queue=false)
+    def mget(mask, queue = false)
       execute('mget', mask, queue)
     end
 
@@ -285,7 +272,7 @@ module SMBClient
     # * _boolean_ = confirms if +mkdir+ operation completed successfully
     # === Example
     #   samba.mkdir('aFolder/aNewFolder')  # => true
-    def mkdir(path, queue=false)
+    def mkdir(path, queue = false)
       execute('mkdir', clean_path(path), queue)[0]
     end
 
@@ -305,12 +292,12 @@ module SMBClient
         paths.unshift path
         path = File.dirname path
       end
-      result = String.new
+      result = ''
       paths.each do |path|
         result = execute('mkdir', clean_path(path), false)[0]
         break if result == false
       end
-      return result
+      result
     end
 
     # The +mput+ method copy all files matching :mask in the current working directory on the local machine to the server.
@@ -322,7 +309,7 @@ module SMBClient
     # _array_ = [ _booleanSuccess_, _mputResultMessage_ ]
     # === Example
     #   samba.mput('file*')  # =>  [true, "putting file \\file_new.txt of size 1004 as file_new.txt (65.4 kb/s) (average 65.4 kb/s)\r\n"]
-    def mput(mask, queue=false)
+    def mput(mask, queue = false)
       execute('mput', mask, queue)
     end
 
@@ -337,7 +324,7 @@ module SMBClient
     # === Example
     #   samba.put(:from => 'aLocalFile.txt')   # =>  [false, "aLocalFile.txt does not exist\r\n"]
 
-    def put(opts={ :from => nil, :to => nil, :queue => false })
+    def put(opts = { from: nil, to: nil, queue: false })
       opts[:to].nil? ? strng = opts[:from] : strng = opts[:from] + ' ' + clean_path(opts[:to])
       execute('put', strng, opts[:queue])
     end
@@ -352,15 +339,7 @@ module SMBClient
     # === Example
     #   samba.recurse   # => true
     def recurse
-      if execute('recurse', '')[0]
-        if @recurse == false
-          @recurse = true
-        else
-          @recurse = false
-        end
-      else
-        return nil
-      end
+      @recurse = @recurse == false if execute('recurse', '')[0]
     end
 
     # The +recurse!+ method impose a true or false state to the recurse parameter
@@ -374,9 +353,9 @@ module SMBClient
     #   samba.recurse(true)   # => true
     def recurse!(state)
       if state == @recurse
-        return @recurse
+        @recurse
       else
-        return self.recurse
+        recurse
       end
     end
 
@@ -395,26 +374,25 @@ module SMBClient
     # * _boolean_ = confirms if +rmdir+ operation completed successfully
     # === Example
     # 	samba.rmdir('mydir')		# => true
-    def rmdir(path, queue=false)
+    def rmdir(path, queue = false)
       execute('rmdir', clean_path(path), queue)[0]
     end
 
     # The +rmpath+ method deletes the specified directory and all the enclosed content recursively
     def rmpath(path)
-      recurse_init = self.recurse?
-      self.recurse!(true) if recurse_init != true
-      self.ls(path).reverse.each_with_index do |level_hash, index|
+      recurse_init = recurse?
+      recurse!(true) if recurse_init != true
+      ls(path).reverse.each_with_index do |level_hash, index|
         level_hash.each do |path, item_array|
           base = case index
-                   when 0
-                     next
-                   when 1
-                     ''
-                   else
-                     path
+                 when 0
+                   next
+                 when 1
+                   ''
+                 else
+                   path
                  end
           item_array.each do |item|
-
           end
         end
       end
@@ -482,7 +460,18 @@ module SMBClient
     #   samba.close
     def close
       result = @gardener.close
-      result.values.map { |queue| queue.empty? }.uniq.size == 1 ? true : false
+      result.values.map(&:empty?).uniq.size == 1
+    end
+
+    private
+
+    def parse_ls(string)
+      ls_items = []
+      string.each_line do |line|
+        ls_item = Helpers::LsItem.parse_line line
+        ls_items << ls_item if ls_item
+      end
+      ls_items
     end
   end
 end
