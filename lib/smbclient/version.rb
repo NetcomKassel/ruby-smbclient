@@ -1,3 +1,3 @@
-class SMBClient
-  VERSION = '0.1.0'.freeze
+module SMBClient
+  VERSION = '0.1.2'.freeze
 end

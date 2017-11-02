@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+ smbclient:
+    build: .
+    container_name: "smbclient"
+    env_file: env.txt
+    environment:
+      RACK_ENV: test
+    dns:
+      - 192.168.1.100
+      - 192.168.1.103
+    dns_search: netcom-netz.priv

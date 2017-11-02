@@ -1,3 +1,3 @@
 require 'minitest/autorun'
 
-require_relative '../lib/smbclient/smbclient'
+require_relative '../lib/smbclient'
