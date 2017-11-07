@@ -68,12 +68,17 @@ module SMBClient
     # * :user = the user name to log into the server
     # * :password = the password to log into the server
     # === Example
-    #   samba = Smbclient.new(  :domain   =>  'NTDOMAIN',
-    #                       :host     =>  'sambaserver',
-    #                       :share    =>  'sambashare',
-    #                       :user     =>  'walrus',
-    #                       :password =>  'eggman')
-    def initialize(options = { domain: '', host: '', share: '', user: '', password: '', version: 2 })
+    # samba = SMBClient::SMB.new(
+    #   domain: 'NTDOMAIN',
+    #   host: 'sambaserver',
+    #   share: 'sambashare',
+    #   user: 'walrus',
+    #   password: 'eggman',
+    #   version: 2
+    # )
+
+    def initialize(options = { domain: '', host: '', share: '', user: '',
+                               password: '', version: 2 })
       $log_smbclient = GlobaLog.logger(STDERR, :warn)
       @recurse = false
       begin
@@ -132,6 +137,9 @@ module SMBClient
     #   samba.exist?('aFile')  # => true
     def exist?(mask)
       recurse!(false)
+      # Replace all back-slashes with two back-slashes
+      # Due to back reference of .gsub we have to escape them twice
+      mask.gsub! '\\', '\\\\\\\\' unless @options[:version] == 1
       execute('ls', mask, false)[0]
     end
 
@@ -230,6 +238,9 @@ module SMBClient
     # 																													@size="8">]}]
 
     def ls(mask = '')
+      # Replace all back-slashes with two back-slashes
+      # Due to back reference of .gsub we have to escape them twice
+      mask.gsub! '\\', '\\\\\\\\' unless @options[:version] == 1
       result, string = execute 'ls', mask, false
       if result
         parse_ls string
@@ -385,12 +396,12 @@ module SMBClient
       ls(path).reverse.each_with_index do |level_hash, index|
         level_hash.each do |path, item_array|
           base = case index
-                 when 0
-                   next
-                 when 1
-                   ''
-                 else
-                   path
+                   when 0
+                     next
+                   when 1
+                     ''
+                   else
+                     path
                  end
           item_array.each do |item|
           end
